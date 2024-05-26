@@ -261,6 +261,17 @@ inferSSRProps<typeof getServerSideProps> & WithNonceProps<{}>) {
                     setErrorMessage={setErrorMessage}
                   />
                 )}
+                <Button
+                  color="secondary"
+                  className="w-full justify-center"
+                  disabled={formState.isSubmitting}
+                  data-testid="cognito"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    await signIn("cognito");
+                  }}>
+                  Sign in with cognito
+                </Button>
               </div>
             </>
           )}

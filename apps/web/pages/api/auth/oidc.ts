@@ -6,6 +6,8 @@ import { HttpError } from "@calcom/lib/http-error";
 // This is the callback endpoint for the OIDC provider
 // A team must set this endpoint in the OIDC provider's configuration
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.warn(req);
+
   if (req.method !== "GET") {
     return res.status(400).send("Method not allowed");
   }
@@ -14,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     code: string;
     state: string;
   };
-
+  console.warn("Is it still there?");
   const { oauthController } = await jackson();
 
   try {

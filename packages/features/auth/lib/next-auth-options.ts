@@ -3,6 +3,7 @@ import type { AuthOptions, Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import { encode } from "next-auth/jwt";
 import type { Provider } from "next-auth/providers";
+import CognitoProvider from "next-auth/providers/cognito";
 import CredentialsProvider from "next-auth/providers/credentials";
 import EmailProvider from "next-auth/providers/email";
 import GoogleProvider from "next-auth/providers/google";
@@ -251,6 +252,45 @@ if (IS_GOOGLE_LOGIN_ENABLED) {
   );
 }
 
+providers.push(
+  CognitoProvider({
+    id: "cognito",
+    name: "Cognito",
+    idToken: true,
+    clientId: "61s8lrllp1uphp7q9pm834gfmg",
+    // your aws cognito client id
+    clientSecret: "5lbcl3bleufrt31ekvedosq6i5h3cl1rparno977dgrseubdp2",
+    // if your AWS Cognito secret exists, input your secret.
+    // if the AWS Cognito secret is blank, input null.
+    client: {
+      token_endpoint_auth_method: "client_secret_post",
+    },
+    checks: [],
+    issuer: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_gVVuqdDsL",
+    token: "https://auth-stage-nicer-travel.auth.us-east-1.amazoncognito.com/oauth2/token",
+    wellKnown:
+      "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_gVVuqdDsL/.well-known/openid-configuration",
+    authorization: "https://auth-stage-nicer-travel.auth.us-east-1.amazoncognito.com/oauth2/authorize",
+    profile: async (profile) => {
+      const user = await UserRepository.findByEmailAndIncludeProfilesAndPassword({
+        email: profile.email || "",
+      });
+      if (!user) throw new Error(ErrorCode.UserNotFound);
+
+      const [userProfile] = user.allProfiles;
+      console.log(userProfile);
+      return {
+        id: profile.sub,
+        email: profile.email,
+        name: user.name,
+        email_verified: true,
+        profile: userProfile,
+      };
+    },
+    allowDangerousEmailAccountLinking: true,
+  })
+);
+
 if (isSAMLLoginEnabled) {
   providers.push({
     id: "saml",
@@ -456,6 +496,7 @@ export const AUTH_OPTIONS: AuthOptions = {
       account,
     }) {
       log.debug("callbacks:jwt", safeStringify({ token, user, account, trigger, session }));
+      console.log("Entro en el callback jwt");
       // The data available in 'session' depends on what data was supplied in update method call of session
       if (trigger === "update") {
         return {
@@ -654,9 +695,7 @@ export const AUTH_OPTIONS: AuthOptions = {
         profile,
         account,
       } = params;
-
-      log.debug("callbacks:signin", safeStringify(params));
-
+      console.log("callbacks:signin", safeStringify(params));
       if (account?.provider === "email") {
         return true;
       }
@@ -684,7 +723,7 @@ export const AUTH_OPTIONS: AuthOptions = {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore-error TODO validate email_verified key on profile
         user.email_verified = user.email_verified || !!user.emailVerified || profile.email_verified;
-
+        console.log(idP);
         if (!user.email_verified) {
           return "/auth/error?error=unverified-email";
         }
@@ -702,6 +741,8 @@ export const AUTH_OPTIONS: AuthOptions = {
             identityProviderId: account.providerAccountId,
           },
         });
+
+        console.log(existingUser);
 
         /* --- START FIX LEGACY ISSUE WHERE 'identityProviderId' was accidentally set to userId --- */
         if (!existingUser) {
@@ -729,6 +770,7 @@ export const AUTH_OPTIONS: AuthOptions = {
             });
           }
         }
+        console.log("line 773");
         /* --- END FIXES LEGACY ISSUE WHERE 'identityProviderId' was accidentally set to userId --- */
         if (existingUser) {
           // In this case there's an existing user and their email address
@@ -762,7 +804,7 @@ export const AUTH_OPTIONS: AuthOptions = {
           const userWithNewEmail = await prisma.user.findFirst({
             where: { email: user.email },
           });
-
+          console.log(userWithNewEmail);
           if (!userWithNewEmail) {
             await prisma.user.update({ where: { id: existingUser.id }, data: { email: user.email } });
             if (existingUser.twoFactorEnabled) {
@@ -793,6 +835,9 @@ export const AUTH_OPTIONS: AuthOptions = {
 
         if (existingUserWithEmail) {
           // if self-hosted then we can allow auto-merge of identity providers if email is verified
+
+          console.log(`hostedcal:${hostedCal}`);
+          console.log(existingUserWithEmail);
           if (
             !hostedCal &&
             existingUserWithEmail.emailVerified &&
@@ -865,6 +910,7 @@ export const AUTH_OPTIONS: AuthOptions = {
         // Associate with organization if enabled by flag and idP is Google (for now)
         const { orgUsername, orgId } = await checkIfUserShouldBelongToOrg(idP, user.email);
 
+        console.log("To get new user");
         const newUser = await prisma.user.create({
           data: {
             // Slugify the incoming name and append a few random characters to

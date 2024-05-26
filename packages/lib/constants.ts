@@ -6,15 +6,9 @@ export const CALCOM_ENV = process.env.CALCOM_ENV || process.env.NODE_ENV;
 export const IS_PRODUCTION = CALCOM_ENV === "production";
 export const IS_PRODUCTION_BUILD = process.env.NODE_ENV === "production";
 const IS_DEV = CALCOM_ENV === "development";
-
+const MY_BASE_URL = "https://meet.stage.nicer.travel";
 /** https://app.cal.com */
-export const WEBAPP_URL =
-  process.env.NEXT_PUBLIC_WEBAPP_URL ||
-  VERCEL_URL ||
-  RAILWAY_STATIC_URL ||
-  HEROKU_URL ||
-  RENDER_URL ||
-  "http://localhost:3000";
+export const WEBAPP_URL = MY_BASE_URL;
 
 // OAuth needs to have HTTPS(which is not generally setup locally) and a valid tld(*.local isn't a valid tld)
 // So for development purpose, we would stick to localhost only
@@ -62,7 +56,7 @@ export const HOSTED_CAL_FEATURES = process.env.NEXT_PUBLIC_HOSTED_CAL_FEATURES |
 
 /** @deprecated use `WEBAPP_URL` */
 export const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_WEBAPP_URL || `https://${process.env.VERCEL_URL}`;
-export const LOGO = "/calcom-logo-white-word.svg";
+export const LOGO = "/nicer-logo.svg";
 export const LOGO_ICON = "/cal-com-icon-white.svg";
 export const AVATAR_FALLBACK = "/avatar.svg";
 export const FAVICON_16 = "/favicon-16x16.png";
